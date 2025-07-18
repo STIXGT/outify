@@ -100,7 +100,7 @@ export default function OutingsGrid() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="p-6 rounded-xl shadow-lg border transition-all duration-300 group">
+        <div className="bg-[#2A2930] p-6 rounded-xl shadow-lg border border-[#382B50] hover:border-purple-500/50 transition-all duration-300 group">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
               <span className="text-2xl">📊</span>
