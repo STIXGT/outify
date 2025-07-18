@@ -1,25 +1,75 @@
+interface Partner {
+  name: string;
+  historialOutings: Outing[];
+}
+
 interface Outing {
-  id: string;
   title: string;
   description: string;
-  companions: string[];
-  budget: number;
   location: string;
-  date: Date;
-  createdAt: Date;
-  category:
-    | "restaurant"
-    | "bar"
-    | "cafe"
-    | "entertainment"
-    | "outdoor"
-    | "cultural"
-    | "shopping"
-    | "other";
-  rating?: number;
+  valoration: number; // Rating del 1-10
+  amountSpent: number;
+  partners: Partner[];
 }
 
 export default function CardOuting({ outing }: { outing: Outing }) {
+  // Función para determinar la categoría basada en keywords en título/descripción
+  const inferCategory = (title: string, description: string) => {
+    const text = `${title} ${description}`.toLowerCase();
+
+    if (
+      text.includes("restaurante") ||
+      text.includes("cena") ||
+      text.includes("almuerzo") ||
+      text.includes("comida")
+    )
+      return "restaurant";
+    if (
+      text.includes("bar") ||
+      text.includes("cerveza") ||
+      text.includes("trago") ||
+      text.includes("bebida")
+    )
+      return "bar";
+    if (
+      text.includes("café") ||
+      text.includes("coffee") ||
+      text.includes("espresso")
+    )
+      return "cafe";
+    if (
+      text.includes("concierto") ||
+      text.includes("cine") ||
+      text.includes("teatro") ||
+      text.includes("show")
+    )
+      return "entertainment";
+    if (
+      text.includes("parque") ||
+      text.includes("senderismo") ||
+      text.includes("naturaleza") ||
+      text.includes("caminar")
+    )
+      return "outdoor";
+    if (
+      text.includes("museo") ||
+      text.includes("galería") ||
+      text.includes("exposición") ||
+      text.includes("cultural")
+    )
+      return "cultural";
+    if (
+      text.includes("shopping") ||
+      text.includes("compras") ||
+      text.includes("centro comercial")
+    )
+      return "shopping";
+
+    return "other";
+  };
+
+  const category = inferCategory(outing.title, outing.description);
+
   const getCategoryIcon = (category: string) => {
     const icons = {
       restaurant: "🍽️",
@@ -52,6 +102,9 @@ export default function CardOuting({ outing }: { outing: Outing }) {
     );
   };
 
+  // Convertir valoration de 1-10 a 1-5 para mostrar estrellas
+  const starRating = Math.round((outing.valoration / 10) * 5);
+
   return (
     <div className="bg-[#2A2930] rounded-xl shadow-lg hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden border border-[#382B50] hover:border-[#4A3B66] group">
       {/* Header */}
@@ -60,12 +113,10 @@ export default function CardOuting({ outing }: { outing: Outing }) {
           <div className="flex items-center gap-3">
             <div className="relative">
               <span className="text-2xl filter drop-shadow-lg">
-                {getCategoryIcon(outing.category)}
+                {getCategoryIcon(category)}
               </span>
               <div className="absolute inset-0 blur-lg opacity-30 group-hover:opacity-50 transition-opacity duration-300">
-                <span className="text-2xl">
-                  {getCategoryIcon(outing.category)}
-                </span>
+                <span className="text-2xl">{getCategoryIcon(category)}</span>
               </div>
             </div>
             <div>
@@ -74,19 +125,22 @@ export default function CardOuting({ outing }: { outing: Outing }) {
               </h3>
               <span
                 className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getCategoryColor(
-                  outing.category
+                  category
                 )}`}
               >
                 <span className="w-2 h-2 bg-current rounded-full mr-2 animate-pulse"></span>
-                {outing.category}
+                {category}
               </span>
             </div>
           </div>
-          {outing.rating && (
+          {outing.valoration > 0 && (
             <div className="flex items-center gap-1 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-500/30">
               <span className="text-yellow-400 animate-pulse">⭐</span>
               <span className="text-sm font-semibold text-yellow-300">
-                {outing.rating}/5
+                {starRating}/5
+              </span>
+              <span className="text-xs text-gray-400 ml-1">
+                ({outing.valoration}/10)
               </span>
             </div>
           )}
@@ -99,17 +153,18 @@ export default function CardOuting({ outing }: { outing: Outing }) {
 
       {/* Content */}
       <div className="px-6 pb-4 space-y-3 relative">
-        {/* Companions */}
+        {/* Partners */}
         <div className="flex items-center gap-3 p-2 rounded-lg bg-[#382B50]/30 backdrop-blur-sm">
           <span className="text-blue-400 text-lg">👥</span>
           <span className="text-sm text-gray-300 font-medium">
-            {outing.companions.length === 0
+            {outing.partners.length === 0
               ? "Solo Adventure"
-              : outing.companions.length === 1
-              ? `Con ${outing.companions[0]}`
-              : `Con ${outing.companions
+              : outing.partners.length === 1
+              ? `Con ${outing.partners[0].name}`
+              : `Con ${outing.partners
                   .slice(0, -1)
-                  .join(", ")} y ${outing.companions.slice(-1)}`}
+                  .map((p) => p.name)
+                  .join(", ")} y ${outing.partners.slice(-1)[0].name}`}
           </span>
         </div>
 
@@ -125,20 +180,7 @@ export default function CardOuting({ outing }: { outing: Outing }) {
         <div className="flex items-center gap-3 p-2 rounded-lg bg-[#382B50]/30 backdrop-blur-sm">
           <span className="text-green-400 text-lg">💰</span>
           <span className="text-sm text-gray-300 font-medium">
-            ${outing.budget.toLocaleString()}
-          </span>
-        </div>
-
-        {/* Date */}
-        <div className="flex items-center gap-3 p-2 rounded-lg bg-[#382B50]/30 backdrop-blur-sm">
-          <span className="text-purple-400 text-lg">📅</span>
-          <span className="text-sm text-gray-300 font-medium">
-            {outing.date.toLocaleDateString("es-ES", {
-              weekday: "short",
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
+            ${outing.amountSpent.toLocaleString()} USD
           </span>
         </div>
       </div>
@@ -149,7 +191,7 @@ export default function CardOuting({ outing }: { outing: Outing }) {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-gray-400">
-              AI Generated • {outing.createdAt.toLocaleDateString("es-ES")}
+              Powered by AI • {new Date().toLocaleDateString("es-ES")}
             </span>
           </div>
           <div className="flex gap-3">

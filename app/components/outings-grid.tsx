@@ -1,99 +1,145 @@
+"use client";
 import CardOuting from "./card-outing";
+import CreateOutingForm from "./create-outing-form";
+import Sidebar from "./sidebar";
+import { useUser } from "@clerk/nextjs";
+import {
+  useCreateOuting,
+  type Outing,
+  type Partner,
+  type GenerateOutingsDto,
+} from "../hooks/useCreateOuting";
+import { useState } from "react";
+import Toast from "./toast";
 
-interface Outing {
-  id: string;
-  title: string;
-  description: string;
-  companions: string[];
-  budget: number;
-  location: string;
-  date: Date;
-  createdAt: Date;
-  category:
-    | "restaurant"
-    | "bar"
-    | "cafe"
-    | "entertainment"
-    | "outdoor"
-    | "cultural"
-    | "shopping"
-    | "other";
-  rating?: number;
-}
-
-// Datos de ejemplo
+// Datos de ejemplo ampliados para el historial
 const sampleOutings: Outing[] = [
   {
-    id: "1",
     title: "Cena en La Bistecca",
     description:
       "Una cena increíble con cortes de carne premium y vinos selectos. El ambiente era perfecto para una celebración especial.",
-    companions: ["María", "Carlos"],
-    budget: 15000,
     location: "Zona Rosa, CDMX",
-    date: new Date("2024-12-15"),
-    createdAt: new Date("2024-12-16"),
-    category: "restaurant",
-    rating: 5,
+    valoration: 9,
+    amountSpent: 150,
+    partners: [
+      { name: "María", historialOutings: [] },
+      { name: "Carlos", historialOutings: [] },
+    ],
   },
   {
-    id: "2",
     title: "Concierto de Jazz",
     description:
       "Noche de jazz en vivo con músicos locales. La acústica del lugar era excelente y el ambiente muy relajado.",
-    companions: [],
-    budget: 800,
     location: "Centro Cultural, Roma Norte",
-    date: new Date("2024-12-10"),
-    createdAt: new Date("2024-12-11"),
-    category: "entertainment",
-    rating: 4,
+    valoration: 8,
+    amountSpent: 25,
+    partners: [],
   },
   {
-    id: "3",
     title: "Café y trabajo",
     description:
       "Sesión de trabajo productiva en un café acogedor. Perfecto para concentrarse y disfrutar un buen espresso.",
-    companions: ["Ana"],
-    budget: 320,
     location: "Starbucks, Polanco",
-    date: new Date("2024-12-08"),
-    createdAt: new Date("2024-12-08"),
-    category: "cafe",
-    rating: 3,
+    valoration: 6,
+    amountSpent: 12,
+    partners: [{ name: "Ana", historialOutings: [] }],
   },
   {
-    id: "4",
     title: "Senderismo en el Ajusco",
     description:
       "Día completo de senderismo con vistas espectaculares de la ciudad. El clima fue perfecto para la actividad.",
-    companions: ["Pedro", "Luis", "Sofia"],
-    budget: 500,
     location: "Parque Nacional Ajusco",
-    date: new Date("2024-12-05"),
-    createdAt: new Date("2024-12-05"),
-    category: "outdoor",
-    rating: 5,
+    valoration: 10,
+    amountSpent: 20,
+    partners: [
+      { name: "Pedro", historialOutings: [] },
+      { name: "Luis", historialOutings: [] },
+      { name: "Sofia", historialOutings: [] },
+    ],
+  },
+  {
+    title: "Brunch dominical",
+    description:
+      "Brunch relajado con amigos en terraza con vista panorámica. Excelente servicio y platillos creativos.",
+    location: "Condesa, CDMX",
+    valoration: 9,
+    amountSpent: 35,
+    partners: [
+      { name: "Juan", historialOutings: [] },
+      { name: "Isabella", historialOutings: [] },
+    ],
+  },
+  {
+    title: "Noche de karaoke",
+    description:
+      "Diversión garantizada cantando nuestras canciones favoritas. El lugar tenía una gran selección musical.",
+    location: "Karaoke Box, Polanco",
+    valoration: 7,
+    amountSpent: 40,
+    partners: [
+      { name: "Miguel", historialOutings: [] },
+      { name: "Carmen", historialOutings: [] },
+    ],
   },
 ];
 
 export default function OutingsGrid() {
+  const { user } = useUser();
+  const { createOuting, isLoading, error } = useCreateOuting(); // Usar createOuting en lugar de createOutingMock
+  const [outings, setOutings] = useState<Outing[]>(sampleOutings);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const handleCreateOuting = async (data: GenerateOutingsDto) => {
+    // Enriquecer los datos con el historial completo
+    const enrichedData: GenerateOutingsDto = {
+      ...data,
+      historialOutings: outings, // Enviar todo el historial actual
+    };
+
+    const result = await createOuting(enrichedData); // Usar la función real del API
+
+    if (result.success && result.data) {
+      // Agregar las nuevas salidas al estado
+      setOutings((prev) => [...result.data!, ...prev]);
+      
+      // Mensaje diferente si viene del fallback
+      const message = result.isFromFallback 
+        ? `¡${result.data.length} opciones generadas como respaldo! La IA está temporalmente no disponible, pero estas sugerencias están basadas en tu solicitud.`
+        : `¡${result.data.length} ${result.data.length === 1 ? "opción generada" : "opciones generadas"} por la IA! Elige tu favorita.`;
+      
+      setToast({
+        message,
+        type: "success",
+      });
+      setIsCreateFormOpen(false); // Cerrar el form después del éxito
+    } else {
+      setToast({
+        message: result.error || "Error al generar la salida",
+        type: "error",
+      });
+      console.error("Error creating outing:", result.error);
+    }
+  };
+
   return (
     <div className="space-y-8 relative">
+      {/* Sidebar with create outing functionality */}
+      <Sidebar onCreateOutingClick={() => setIsCreateFormOpen(true)} />
+
       {/* Header */}
       <div className="flex items-center justify-between relative">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">AI</span>
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
-              Outify
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
+              Bienvenido {user?.firstName || user?.fullName || "Usuario"}
             </h1>
           </div>
-          <p className="text-gray-400 ml-11 flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            Aqui tus salidas!
+          <p className="text-gray-400 flex items-center gap-2">
+            Aquí tus salidas!
           </p>
         </div>
       </div>
@@ -108,7 +154,7 @@ export default function OutingsGrid() {
             <div>
               <p className="text-sm text-gray-400">Total Salidas</p>
               <p className="text-2xl font-bold text-white group-hover:text-purple-200 transition-colors">
-                {sampleOutings.length}
+                {outings.length}
               </p>
             </div>
           </div>
@@ -123,9 +169,10 @@ export default function OutingsGrid() {
               <p className="text-sm text-gray-400">Gasto Total</p>
               <p className="text-2xl font-bold text-white group-hover:text-green-200 transition-colors">
                 $
-                {sampleOutings
-                  .reduce((sum, outing) => sum + outing.budget, 0)
-                  .toLocaleString()}
+                {outings
+                  .reduce((sum, outing) => sum + outing.amountSpent, 0)
+                  .toLocaleString()}{" "}
+                USD
               </p>
             </div>
           </div>
@@ -140,11 +187,12 @@ export default function OutingsGrid() {
               <p className="text-sm text-gray-400">Rating Promedio</p>
               <p className="text-2xl font-bold text-white group-hover:text-yellow-200 transition-colors">
                 {(
-                  sampleOutings
-                    .filter((o) => o.rating)
-                    .reduce((sum, outing) => sum + (outing.rating || 0), 0) /
-                  sampleOutings.filter((o) => o.rating).length
+                  outings
+                    .filter((o) => o.valoration > 0)
+                    .reduce((sum, outing) => sum + outing.valoration, 0) /
+                  outings.filter((o) => o.valoration > 0).length
                 ).toFixed(1)}
+                /10
               </p>
             </div>
           </div>
@@ -192,10 +240,50 @@ export default function OutingsGrid() {
 
       {/* Outings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sampleOutings.map((outing) => (
-          <CardOuting key={outing.id} outing={outing} />
+        {outings.map((outing, index) => (
+          <CardOuting key={`${outing.title}-${index}`} outing={outing} />
         ))}
       </div>
+
+      {/* Create Outing Form Modal */}
+      <CreateOutingForm
+        isOpen={isCreateFormOpen}
+        onClose={() => setIsCreateFormOpen(false)}
+        onSubmit={handleCreateOuting}
+        historialOutings={outings}
+      />
+
+      {/* Loading/Error States */}
+      {isLoading && (
+        <div className="fixed bottom-8 right-8 bg-[#2A2930] border border-[#382B50] rounded-xl p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+            <span className="text-white font-medium">
+              🤖 IA generando opciones personalizadas...
+            </span>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="fixed bottom-8 right-8 bg-red-500/10 border border-red-500/30 rounded-xl p-4 shadow-lg max-w-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-red-400 text-lg">⚠️</span>
+            <div>
+              <p className="text-red-300 font-medium">Error</p>
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notifications */}
+      <Toast
+        message={toast?.message || ""}
+        type={toast?.type || "success"}
+        isVisible={!!toast}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 }

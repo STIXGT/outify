@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar, integer, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -13,6 +13,10 @@ export const outings = pgTable("outings", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
+  location: varchar("location", { length: 255 }).notNull(),
+  valoration: integer("valoration").notNull(), // 1-10 rating
+  amountSpent: integer("amount_spent").notNull(), // En centavos para precisión
+  partners: jsonb("partners").notNull().default('[]'), // Array de partners
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   userId: text("user_id")
     .references(() => users.id)
