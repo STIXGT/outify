@@ -10,7 +10,11 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.25.4",
+    "@prisma/client": "^6.12.0",
+    "drizzle-orm": "^0.44.3",
     "next": "15.4.1",
+    "postgres": "^3.4.7",
+    "prisma": "^6.12.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
